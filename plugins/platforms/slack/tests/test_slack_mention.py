@@ -41,7 +41,9 @@ def _ensure_slack_mock():
 _ensure_slack_mock()
 
 import hermes_agent_slack as _slack_mod
+import hermes_agent_slack.adapter as _adapter_mod
 _slack_mod.SLACK_AVAILABLE = True
+_adapter_mod.SLACK_AVAILABLE = True
 
 from hermes_agent_slack import SlackAdapter  # noqa: E402
 

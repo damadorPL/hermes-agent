@@ -59,7 +59,9 @@ _ensure_slack_mock()
 
 # Patch SLACK_AVAILABLE before importing the adapter
 import hermes_agent_slack as _slack_mod
+import hermes_agent_slack.adapter as _adapter_mod
 _slack_mod.SLACK_AVAILABLE = True
+_adapter_mod.SLACK_AVAILABLE = True
 
 from hermes_agent_slack import SlackAdapter  # noqa: E402
 
@@ -177,9 +179,9 @@ class TestAppMentionHandler:
             "team": "FakeTeam",
         })
 
-        with patch.object(_slack_mod, "AsyncApp", return_value=mock_app), \
-             patch.object(_slack_mod, "AsyncWebClient", return_value=mock_web_client), \
-             patch.object(_slack_mod, "AsyncSocketModeHandler", return_value=MagicMock()), \
+        with patch.object(_adapter_mod, "AsyncApp", return_value=mock_app), \
+             patch.object(_adapter_mod, "AsyncWebClient", return_value=mock_web_client), \
+             patch.object(_adapter_mod, "AsyncSocketModeHandler", return_value=MagicMock()), \
              patch.dict(os.environ, {"SLACK_APP_TOKEN": "xapp-fake"}), \
              patch("gateway.status.acquire_scoped_lock", return_value=(True, None)), \
              patch("asyncio.create_task"):
@@ -217,9 +219,9 @@ class TestSlackConnectCleanup:
         mock_web_client = AsyncMock()
         mock_web_client.auth_test = AsyncMock(side_effect=RuntimeError("boom"))
 
-        with patch.object(_slack_mod, "AsyncApp", return_value=mock_app), \
-             patch.object(_slack_mod, "AsyncWebClient", return_value=mock_web_client), \
-             patch.object(_slack_mod, "AsyncSocketModeHandler", return_value=MagicMock()), \
+        with patch.object(_adapter_mod, "AsyncApp", return_value=mock_app), \
+             patch.object(_adapter_mod, "AsyncWebClient", return_value=mock_web_client), \
+             patch.object(_adapter_mod, "AsyncSocketModeHandler", return_value=MagicMock()), \
              patch.dict(os.environ, {"SLACK_APP_TOKEN": "xapp-fake"}), \
              patch("gateway.status.acquire_scoped_lock", return_value=(True, None)), \
              patch("gateway.status.release_scoped_lock") as mock_release:
@@ -265,9 +267,9 @@ class TestSlackConnectCleanup:
 
         second_handler = MagicMock()
 
-        with patch.object(_slack_mod, "AsyncApp", return_value=mock_app), \
-             patch.object(_slack_mod, "AsyncWebClient", return_value=mock_web_client), \
-             patch.object(_slack_mod, "AsyncSocketModeHandler", return_value=second_handler), \
+        with patch.object(_adapter_mod, "AsyncApp", return_value=mock_app), \
+             patch.object(_adapter_mod, "AsyncWebClient", return_value=mock_web_client), \
+             patch.object(_adapter_mod, "AsyncSocketModeHandler", return_value=second_handler), \
              patch.dict(os.environ, {"SLACK_APP_TOKEN": "xapp-fake"}), \
              patch("gateway.status.acquire_scoped_lock", return_value=(True, None)), \
              patch("gateway.status.release_scoped_lock"), \
@@ -291,13 +293,13 @@ class TestSlackProxyBehavior:
         assert not is_host_excluded_by_no_proxy("slack.com", "localhost,.internal.corp")
 
     def test_resolve_slack_proxy_url_ignores_unsupported_proxy_schemes(self):
-        with patch.object(_slack_mod, "resolve_proxy_url", return_value="socks5://proxy.example.com:1080"):
-            assert _slack_mod._resolve_slack_proxy_url() is None
+        with patch.object(_adapter_mod, "resolve_proxy_url", return_value="socks5://proxy.example.com:1080"):
+            assert _adapter_mod._resolve_slack_proxy_url() is None
 
     def test_resolve_slack_proxy_url_checks_all_slack_hosts(self):
-        with patch.object(_slack_mod, "resolve_proxy_url", return_value="http://proxy.example.com:3128"), \
-             patch.object(_slack_mod, "is_host_excluded_by_no_proxy", side_effect=lambda host: host == "wss-primary.slack.com") as excluded:
-            assert _slack_mod._resolve_slack_proxy_url() is None
+        with patch.object(_adapter_mod, "resolve_proxy_url", return_value="http://proxy.example.com:3128"), \
+             patch.object(_adapter_mod, "is_host_excluded_by_no_proxy", side_effect=lambda host: host == "wss-primary.slack.com") as excluded:
+            assert _adapter_mod._resolve_slack_proxy_url() is None
             excluded.assert_has_calls([
                 call("slack.com"),
                 call("files.slack.com"),
@@ -371,10 +373,10 @@ class TestSlackProxyBehavior:
         config = PlatformConfig(enabled=True, token="xoxb-primary,xoxb-secondary")
         adapter = SlackAdapter(config)
 
-        with patch.object(_slack_mod, "AsyncApp", side_effect=FakeApp), \
-             patch.object(_slack_mod, "AsyncWebClient", side_effect=FakeWebClient), \
-             patch.object(_slack_mod, "AsyncSocketModeHandler", FakeSocketModeHandler), \
-             patch.object(_slack_mod, "_resolve_slack_proxy_url", return_value="http://proxy.example.com:3128"), \
+        with patch.object(_adapter_mod, "AsyncApp", side_effect=FakeApp), \
+             patch.object(_adapter_mod, "AsyncWebClient", side_effect=FakeWebClient), \
+             patch.object(_adapter_mod, "AsyncSocketModeHandler", FakeSocketModeHandler), \
+             patch.object(_adapter_mod, "_resolve_slack_proxy_url", return_value="http://proxy.example.com:3128"), \
              patch.dict(os.environ, {"SLACK_APP_TOKEN": "xapp-fake"}, clear=False), \
              patch("gateway.status.acquire_scoped_lock", return_value=(True, None)), \
              patch("asyncio.create_task", return_value=MagicMock(name="socket-mode-task")):
@@ -454,10 +456,10 @@ class TestSlackProxyBehavior:
         config = PlatformConfig(enabled=True, token="xoxb-primary")
         adapter = SlackAdapter(config)
 
-        with patch.object(_slack_mod, "AsyncApp", side_effect=FakeApp), \
-             patch.object(_slack_mod, "AsyncWebClient", side_effect=FakeWebClient), \
-             patch.object(_slack_mod, "AsyncSocketModeHandler", FakeSocketModeHandler), \
-             patch.object(_slack_mod, "_resolve_slack_proxy_url", return_value=None), \
+        with patch.object(_adapter_mod, "AsyncApp", side_effect=FakeApp), \
+             patch.object(_adapter_mod, "AsyncWebClient", side_effect=FakeWebClient), \
+             patch.object(_adapter_mod, "AsyncSocketModeHandler", FakeSocketModeHandler), \
+             patch.object(_adapter_mod, "_resolve_slack_proxy_url", return_value=None), \
              patch.dict(os.environ, {"SLACK_APP_TOKEN": "xapp-fake"}, clear=False), \
              patch("gateway.status.acquire_scoped_lock", return_value=(True, None)), \
              patch("asyncio.create_task", return_value=MagicMock(name="socket-mode-task")):
